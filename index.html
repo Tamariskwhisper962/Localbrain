@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LocalBrain — 로컬 LLM · RAG · MCP 정리</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg-soft:#161b22; --bg-card:#1c2230; --border:#2a3240;
+    --fg:#e6edf3; --fg-dim:#9aa7b4; --fg-faint:#6b7785;
+    --accent:#58a6ff; --accent2:#7ee787; --accent3:#d2a8ff; --warn:#f0b429; --pink:#ff7b9c;
+    --code-bg:#11161f; --radius:14px;
+    --mono:"Cascadia Code",ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+    --sans:-apple-system,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+    line-height:1.75;font-size:16px;
+    background-image:radial-gradient(1200px 600px at 80% -10%,rgba(88,166,255,.08),transparent),
+                     radial-gradient(900px 500px at -10% 10%,rgba(210,168,255,.06),transparent);
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px 120px}
+  header.hero{padding:64px 0 28px;text-align:center}
+  .badge{display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:2px;
+    color:var(--accent2);border:1px solid var(--border);border-radius:999px;padding:5px 14px;
+    background:var(--bg-soft);text-transform:uppercase}
+  h1{font-size:clamp(34px,6vw,52px);margin:18px 0 8px;letter-spacing:-1px;
+    background:linear-gradient(110deg,var(--fg),var(--accent) 60%,var(--accent3));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--fg-dim);font-size:17px;margin:0 auto;max-width:620px}
+  .meta{color:var(--fg-faint);font-size:13px;margin-top:18px;font-family:var(--mono)}
+
+  /* summary cards */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:40px 0 12px}
+  @media(max-width:680px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 18px 16px;transition:.2s;position:relative;overflow:hidden}
+  .card:hover{border-color:var(--accent);transform:translateY(-3px)}
+  .card .ico{font-size:24px}
+  .card h3{margin:8px 0 6px;font-size:18px}
+  .card p{margin:0;color:var(--fg-dim);font-size:14px}
+  .card.c1 h3{color:var(--accent)} .card.c2 h3{color:var(--accent2)} .card.c3 h3{color:var(--accent3)}
+
+  /* toc */
+  nav.toc{margin:36px 0 10px;background:var(--bg-soft);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px 24px}
+  nav.toc strong{font-size:13px;letter-spacing:1px;color:var(--fg-faint);text-transform:uppercase}
+  nav.toc ol{margin:12px 0 0;padding-left:20px;columns:2;column-gap:32px}
+  @media(max-width:680px){nav.toc ol{columns:1}}
+  nav.toc a{color:var(--fg);text-decoration:none;border-bottom:1px dashed transparent}
+  nav.toc a:hover{color:var(--accent);border-color:var(--accent)}
+  nav.toc li{margin:5px 0}
+
+  section{margin:54px 0;scroll-margin-top:20px}
+  h2{font-size:28px;margin:0 0 6px;display:flex;align-items:center;gap:12px;letter-spacing:-.5px}
+  h2 .num{font-family:var(--mono);font-size:15px;color:var(--bg);background:var(--accent);
+    border-radius:8px;padding:3px 10px;font-weight:700}
+  .lead{color:var(--fg-dim);margin:0 0 22px;font-size:16px}
+  h3{font-size:19px;margin:30px 0 10px;color:var(--fg)}
+  h3::before{content:"▍";color:var(--accent);margin-right:8px}
+  p{margin:12px 0}
+  a{color:var(--accent)}
+  hr{border:0;border-top:1px solid var(--border);margin:48px 0}
+
+  code{font-family:var(--mono);background:var(--code-bg);border:1px solid var(--border);
+    border-radius:6px;padding:1px 6px;font-size:13.5px;color:var(--accent2)}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-left:3px solid var(--accent);
+    border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);
+    font-size:13.5px;line-height:1.6;color:#cdd9e5}
+  pre code{background:none;border:0;padding:0;color:inherit}
+  pre.diagram{border-left-color:var(--accent3);color:#aeb9c7;font-size:13px;text-align:left}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px;
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:var(--bg-soft);color:var(--accent);font-weight:600;font-size:13px;
+    letter-spacing:.5px;text-transform:uppercase}
+  tr:last-child td{border-bottom:0}
+  td strong{color:var(--fg)}
+
+  .callout{border-radius:12px;padding:14px 18px;margin:20px 0;border:1px solid;
+    display:flex;gap:12px;align-items:flex-start;font-size:14.5px}
+  .callout .ci{font-size:18px;line-height:1.4}
+  .callout.warn{background:rgba(240,180,41,.08);border-color:rgba(240,180,41,.4)}
+  .callout.warn .ci{color:var(--warn)}
+  .callout.tip{background:rgba(126,231,135,.07);border-color:rgba(126,231,135,.35)}
+  .callout.tip .ci{color:var(--accent2)}
+  .callout.note{background:rgba(88,166,255,.07);border-color:rgba(88,166,255,.35)}
+  .callout.note .ci{color:var(--accent)}
+  .callout p{margin:0}
+
+  ul.clean{list-style:none;padding-left:0}
+  ul.clean li{padding:6px 0 6px 26px;position:relative;color:var(--fg-dim)}
+  ul.clean li::before{content:"›";position:absolute;left:6px;color:var(--accent);font-weight:700}
+  ul.clean li strong{color:var(--fg)}
+
+  .pill{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 9px;border-radius:999px;
+    border:1px solid var(--border);background:var(--bg-soft);color:var(--fg-dim);margin:2px 3px 2px 0}
+
+  footer{text-align:center;color:var(--fg-faint);font-size:13px;margin-top:80px;
+    border-top:1px solid var(--border);padding-top:28px}
+  .top{position:fixed;right:24px;bottom:24px;width:44px;height:44px;border-radius:50%;
+    background:var(--bg-card);border:1px solid var(--border);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:20px;
+    transition:.2s}
+  .top:hover{border-color:var(--accent);transform:translateY(-2px)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <span class="badge">Local · Private · Offline</span>
+    <h1>LocalBrain</h1>
+    <p class="sub">내 PC에서 돌리는 LLM, 내 문서로 답하는 RAG, 도구를 잇는 MCP — 한 번의 대화로 정리한 핵심 노트.</p>
+    <div class="meta">2026-05-30 · 로컬 LLM / RAG / MCP</div>
+  </header>
+
+  <!-- 한눈에 보기 -->
+  <div class="cards">
+    <div class="card c1">
+      <div class="ico">🧠</div>
+      <h3>로컬 LLM (Ollama)</h3>
+      <p>모델을 내 컴퓨터에서 실행. 비용 없고 데이터가 밖으로 나가지 않음.</p>
+    </div>
+    <div class="card c2">
+      <div class="ico">📚</div>
+      <h3>RAG</h3>
+      <p>내 문서를 검색해 근거로 답하게 하는 <em>기법</em>. 환각↓ 최신지식↑.</p>
+    </div>
+    <div class="card c3">
+      <div class="ico">🔌</div>
+      <h3>MCP</h3>
+      <p>LLM을 외부 도구·시스템에 잇는 <em>표준 프로토콜</em>. 행동을 가능하게.</p>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <strong>목차</strong>
+    <ol>
+      <li><a href="#ollama">Ollama / 로컬 LLM</a></li>
+      <li><a href="#rag">로컬 RAG의 원리</a></li>
+      <li><a href="#build">RAG 구축 도구</a></li>
+      <li><a href="#vs">RAG vs MCP</a></li>
+      <li><a href="#loop">자가 개선 RAG 루프</a></li>
+      <li><a href="#mcp-rag">MCP로 RAG 구현 · 임베딩의 핵심</a></li>
+      <li><a href="#federation">인덱싱형 vs 페더레이션형 (M365 사례)</a></li>
+      <li><a href="#repos">바로 쓰는 오픈소스 RAG MCP 서버</a></li>
+      <li><a href="#db">DB 데이터에 RAG 적용하기</a></li>
+      <li><a href="#glossary">용어 미니 사전</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1. Ollama -->
+  <section id="ollama">
+    <h2><span class="num">01</span> Ollama / 로컬 LLM</h2>
+    <p class="lead">대규모 언어 모델을 로컬에서 쉽게 실행하게 해주는 오픈소스 도구. "LLM계의 Docker"라고 보면 된다.</p>
+
+    <h3>핵심 특징</h3>
+    <ul class="clean">
+      <li><strong>로컬 실행</strong> — 인터넷 없이 내 PC에서 구동, 프라이버시 보장 + API 비용 0</li>
+      <li><strong>간편함</strong> — <code>ollama run llama3</code> 한 줄로 다운로드부터 실행까지</li>
+      <li><strong>다양한 모델</strong> — Llama, Mistral, Gemma, Qwen, Phi, DeepSeek 등</li>
+      <li><strong>크로스 플랫폼 · GPU 가속</strong> — Windows/macOS/Linux, NVIDIA·AMD·Apple Silicon 지원</li>
+    </ul>
+
+    <h3>기본 명령어</h3>
+<pre><code>ollama run llama3      # 실행 (없으면 자동 다운로드)
+ollama pull mistral    # 다운로드만
+ollama list            # 설치된 모델 목록
+ollama ps              # 실행 중인 모델</code></pre>
+
+    <h3>API 서버로 활용</h3>
+    <p>설치 시 <code>http://localhost:11434</code>에 REST API 서버가 자동으로 뜬다. <strong>OpenAI 호환 API</strong>(<code>/v1/chat/completions</code>)도 제공해, 기존 OpenAI SDK 코드의 엔드포인트만 바꿔 로컬 모델로 전환할 수 있다.</p>
+<pre><code>curl http://localhost:11434/api/generate -d '{
+  "model": "llama3",
+  "prompt": "안녕하세요"
+}'</code></pre>
+
+    <h3>Modelfile — 커스텀 모델</h3>
+    <p>Dockerfile처럼 시스템 프롬프트·파라미터를 정의해 나만의 모델을 만든다.</p>
+<pre><code>FROM llama3
+PARAMETER temperature 0.7
+SYSTEM "너는 친절한 한국어 비서야."
+
+# 생성 & 실행
+# ollama create my-assistant -f Modelfile
+# ollama run my-assistant</code></pre>
+
+    <div class="callout tip">
+      <span class="ci">✔</span>
+      <p><strong>언제 좋은가?</strong> 민감 데이터를 외부로 안 보내고 처리할 때, API 비용 없이 실험할 때, 오프라인 환경, 그리고 — 바로 다음 주제인 <strong>로컬 RAG</strong>의 엔진으로.</p>
+    </div>
+  </section>
+  <hr>
+
+  <!-- 2. RAG -->
+  <section id="rag">
+    <h2><span class="num">02</span> 로컬 RAG의 원리</h2>
+    <p class="lead">RAG(Retrieval-Augmented Generation) = LLM이 답하기 전에 <strong>내 문서에서 관련 정보를 검색</strong>해 그 근거로 답하게 하는 기법. 모든 과정을 내 PC에서 하면 "로컬 RAG".</p>
+
+    <h3>왜 필요한가</h3>
+    <ul class="clean">
+      <li><strong>지식 한계</strong> — 학습 이후 정보나 비공개 사내 문서는 모델이 모른다</li>
+      <li><strong>환각(Hallucination)</strong> — 모르는 걸 그럴듯하게 지어낸다</li>
+    </ul>
+    <p>RAG는 "관련 부분을 찾아 → 그걸 근거로 답변"하게 해 이 둘을 해결한다. <strong>재학습(파인튜닝) 없이</strong> 최신·전용 지식을 주입할 수 있는 게 큰 장점이다.</p>
+
+    <h3>2단계 흐름</h3>
+<pre class="diagram">① 인덱싱 (사전 준비)
+   문서(PDF·TXT·MD)
+      │  청킹(Chunking) — 작은 조각으로 분할
+      ▼
+   텍스트 청크들
+      │  임베딩(Embedding) — 각 청크를 벡터로 변환
+      ▼
+   벡터들 ───────────────▶ [ 벡터 DB 에 저장 ]
+
+② 질의 (실제 사용)
+   사용자 질문
+      │  질문도 똑같이 임베딩
+      ▼
+   질문 벡터  ──유사도 비교(코사인)──▶ [ 벡터 DB ]
+                                         │ 가까운 청크 검색
+                                         ▼
+   관련 청크 + 원래 질문 ──▶ [ LLM ] ──▶ 근거 기반 답변</pre>
+
+    <h3>"유사도 비교"의 정체 = 벡터(임베딩)</h3>
+    <p>청크를 쪼개기만 해선 비교가 안 된다. 각 청크를 임베딩 모델로 <strong>벡터(숫자 배열)</strong>로 바꾸면, 의미가 비슷할수록 벡터 공간에서 가까이 위치한다. 그래서 키워드가 정확히 일치하지 않아도 의미 기반 검색이 된다.</p>
+<pre class="diagram">"강아지는 귀엽다"  →  [0.21, -0.88, 0.45, ...]  ┐ 가까움
+"개는 사랑스럽다"  →  [0.19, -0.85, 0.48, ...]  ┘ (의미 유사)
+"오늘 환율은..."   →  [0.91,  0.12, -0.70, ...]   멀리 떨어짐</pre>
+
+    <div class="callout note">
+      <span class="ci">ℹ</span>
+      <p><strong>검색의 주체는 LLM이 아니다.</strong> 검색은 <em>벡터 DB + retriever(검색 로직)</em>가 하고, LLM은 찾아온 청크를 <em>읽고 답변을 생성</em>할 뿐이다. (단, 요즘은 LLM이 "검색이 필요한지 판단 → 도구 호출"까지 하는 <em>에이전틱 RAG</em>로 경계가 흐려지고 있다.)</p>
+    </div>
+
+    <p><strong>한 문장 요약</strong> — 내 문서를 청크로 쪼개고 → 각 청크를 벡터로 변환해 벡터 DB에 인덱싱해두었다가 → 질문이 들어오면 질문도 벡터로 바꿔 의미가 가까운 청크를 검색해 LLM에게 근거로 건네주는 구조.</p>
+  </section>
+  <hr>
+
+  <!-- 3. 구축 -->
+  <section id="build">
+    <h2><span class="num">03</span> RAG 구축 도구</h2>
+    <p class="lead">거창한 유료 도구가 필요한 게 아니라, <strong>대부분 무료 오픈소스 조합</strong>이다. PC 한 대 + Python이면 시작할 수 있다.</p>
+
+    <h3>4가지 구성 요소</h3>
+    <table>
+      <tr><th>구성 요소</th><th>역할</th><th>로컬 예시 (무료)</th></tr>
+      <tr><td><strong>① 임베딩 모델</strong></td><td>텍스트 → 벡터 변환</td><td>Ollama <code>nomic-embed-text</code>, <code>bge-m3</code></td></tr>
+      <tr><td><strong>② 벡터 DB</strong></td><td>벡터 저장 + 유사도 검색</td><td>Chroma, FAISS, Qdrant, LanceDB</td></tr>
+      <tr><td><strong>③ LLM</strong></td><td>검색 내용으로 답변 생성</td><td>Ollama <code>llama3</code>, <code>qwen</code></td></tr>
+      <tr><td><strong>④ 오케스트레이션</strong></td><td>위 셋을 연결하는 흐름 제어</td><td>LangChain, LlamaIndex (또는 직접 코딩)</td></tr>
+    </table>
+    <p>①과 ③은 <strong>Ollama 하나로</strong> 둘 다 해결되고, ②는 <code>pip install</code>로 설치한다.</p>
+
+    <h3>난이도별 선택지</h3>
+    <table>
+      <tr><th>방식</th><th>특징</th><th>대표</th></tr>
+      <tr><td><strong>라이브러리 조합</strong></td><td>직접 코딩, 모든 단계 세밀 제어</td><td>LangChain/LlamaIndex + Ollama + Chroma</td></tr>
+      <tr><td><strong>올인원 도구</strong></td><td>설치만 하면 GUI로 문서 끌어다 놓기</td><td>AnythingLLM, Open WebUI, GPT4All, LM Studio</td></tr>
+      <tr><td><strong>클라우드 관리형</strong></td><td>운영 부담↓ 그러나 데이터 외부 유출</td><td>Pinecone, Weaviate Cloud, Dify, Flowise</td></tr>
+    </table>
+
+    <h3>최소 Python 예시 (LangChain + Ollama + Chroma)</h3>
+<pre><code># pip install langchain langchain-community langchain-ollama chromadb
+from langchain_community.document_loaders import TextLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+
+# 1. 문서 로드 & 청킹
+docs = TextLoader("my_document.txt", encoding="utf-8").load()
+chunks = RecursiveCharacterTextSplitter(
+    chunk_size=500, chunk_overlap=50).split_documents(docs)
+
+# 2. 임베딩 & 벡터 DB 저장 (모두 로컬)
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+vectorstore = Chroma.from_documents(chunks, embeddings)
+
+# 3. RAG 체인
+llm = ChatOllama(model="llama3")
+qa = RetrievalQA.from_chain_type(
+    llm=llm, retriever=vectorstore.as_retriever(search_kwargs={"k": 3}))
+
+# 4. 질문
+print(qa.invoke({"query": "이 문서의 핵심 내용은?"})["result"])</code></pre>
+    <div class="callout note"><span class="ci">ℹ</span><p>먼저 <code>ollama pull nomic-embed-text</code> 와 <code>ollama pull llama3</code> 로 모델을 받아둔다.</p></div>
+
+    <h3>품질을 높이는 포인트</h3>
+    <ul class="clean">
+      <li><strong>청킹 전략</strong> — 너무 크면 잡음, 너무 작으면 맥락 끊김 (보통 300~800 토큰 + 오버랩)</li>
+      <li><strong>좋은 임베딩 모델</strong> — 한국어라면 다국어에 강한 <code>bge-m3</code> 권장</li>
+      <li><strong>검색 개수(k) 조정 · 재순위화(Reranking) · 하이브리드 검색</strong>(벡터+키워드)</li>
+    </ul>
+
+    <p><span class="pill">코딩 없이 체험</span> AnythingLLM + Ollama &nbsp;
+       <span class="pill">만들며 배우기</span> LangChain + Chroma &nbsp;
+       <span class="pill">가장 단순</span> LlamaIndex + FAISS</p>
+  </section>
+  <hr>
+
+  <!-- 4. RAG vs MCP -->
+  <section id="vs">
+    <h2><span class="num">04</span> RAG vs MCP</h2>
+    <p class="lead">둘 다 "LLM의 한계를 외부 자원으로 메운다"는 점이 비슷하게 들리지만 — <strong>RAG는 기법(방법론), MCP는 표준 규격(프로토콜)</strong>으로 애초에 같은 층위가 아니다.</p>
+
+    <table>
+      <tr><th>구분</th><th>RAG</th><th>MCP (Model Context Protocol)</th></tr>
+      <tr><td><strong>본질</strong></td><td>기술/패턴 — 어떻게 답할까</td><td>프로토콜/표준 — 어떻게 연결할까</td></tr>
+      <tr><td><strong>목적</strong></td><td>관련 문서를 찾아 답변 정확도↑</td><td>LLM이 외부 도구·데이터에 접근</td></tr>
+      <tr><td><strong>방향</strong></td><td>주로 <strong>읽기</strong>(검색)</td><td>읽기 + <strong>쓰기/실행</strong>(행동)</td></tr>
+      <tr><td><strong>방식</strong></td><td>임베딩 → 벡터 검색 → 프롬프트 주입</td><td>클라이언트-서버 표준 메시지 교환</td></tr>
+      <tr><td><strong>예시</strong></td><td>사내 문서 Q&amp;A 챗봇</td><td>Claude가 GitHub·DB·파일시스템 조작</td></tr>
+    </table>
+
+    <div class="callout tip">
+      <span class="ci">💡</span>
+      <p><strong>비유</strong> — RAG는 도서관에서 <em>관련 책 페이지를 책상에 펼쳐주는</em> 것(정보 제공). MCP는 LLM에게 <em>전화기와 리모컨을 쥐여주는</em> 것(행동 능력). MCP를 "USB-C 포트"에 비유하기도 한다: 한 번 MCP 서버로 만들면 어떤 LLM 앱이든 표준 단자에 꽂아 쓴다.</p>
+    </div>
+
+    <h3>경쟁이 아니라 보완 — MCP가 RAG를 감쌀 수 있다</h3>
+<pre class="diagram">[ LLM 앱 / Claude ]
+       │  MCP 프로토콜로 호출 ("검색해줘")
+       ▼
+[ MCP 서버: "문서 검색" ]   ← 이 서버 내부가 사실 RAG 시스템
+       ├─ 벡터 DB 검색
+       └─ 관련 청크 반환
+</pre>
+    <p>즉 <strong>RAG</strong>는 서버 내부에서 실제로 검색하는 로직이고, <strong>MCP</strong>는 그 기능을 LLM 앱에 연결·호출하는 통로다. RAG는 "무엇을 알려줄까(데이터)", MCP는 "어떻게 연결·행동시킬까(인터페이스)"에 초점이 있다.</p>
+  </section>
+  <hr>
+
+  <!-- 5. 자가 개선 루프 -->
+  <section id="loop">
+    <h2><span class="num">05</span> 자가 개선 RAG 루프</h2>
+    <p class="lead">대화에서 나온 질문·피드백을 RAG에 다시 반영해 "살아있는" 시스템으로 진화시킬 수 있다. 실무 챗봇·고객지원 봇에서 <strong>이미 널리 쓰이는 표준 패턴</strong>이다.</p>
+
+    <h3>성격이 다른 두 가지 목표</h3>
+    <table>
+      <tr><th>목표</th><th>무엇을 반영?</th><th>성격</th></tr>
+      <tr><td><strong>A. 지식 보강</strong></td><td>검증된 Q&amp;A를 새 문서로 재인덱싱</td><td>검색 대상(지식)을 늘림</td></tr>
+      <tr><td><strong>B. 운영 최적화</strong></td><td>"어떤 질문/문서가 자주 쓰이나" 통계</td><td>시스템 개선용 메타데이터</td></tr>
+    </table>
+
+    <h3>A. 지식 축적 — 검증된 Q&amp;A 재인덱싱</h3>
+<pre><code>if user_feedback == "good":
+    qa_text = f"질문: {question}\n답변: {answer}"
+    doc = Document(page_content=qa_text,
+                   metadata={"source": "verified_qa", "date": today})
+    vectorstore.add_documents([doc])   # 벡터 DB에 추가</code></pre>
+    <div class="callout warn">
+      <span class="ci">⚠</span>
+      <p><strong>오염(feedback poisoning) 주의.</strong> 검수 없이 LLM 답변을 무조건 다시 넣으면 <em>환각이 지식으로 굳어진다</em>. 반드시 "사람 승인" 또는 "👍 받은 것만" 반영할 것.</p>
+    </div>
+
+    <h3>B. 사용 패턴 분석 — 검색 로그 활용</h3>
+    <table>
+      <tr><th>분석</th><th>활용</th></tr>
+      <tr><td>질문 벡터 군집화(클러스터링)</td><td>자주 묻는 유사 질문 그룹 발견 → FAQ 자동 생성</td></tr>
+      <tr><td>검색 빈도 집계</td><td>자주 요청되는 문서/청크 파악 → 캐싱·상위 노출</td></tr>
+      <tr><td>검색됐는데 답 못 한 질문</td><td>지식 공백(missing knowledge) 발견 → 문서 보충</td></tr>
+      <tr><td>👎 받은 답변</td><td>청킹/검색 품질 개선 지점 파악</td></tr>
+    </table>
+    <div class="callout note"><span class="ci">ℹ</span><p>"자주 묻는 질문 그룹화"는 새 질문을 기존 질문들과 <strong>벡터 유사도로 비교</strong>해 묶는 것 — RAG의 임베딩 기술을 그대로 재활용한다.</p></div>
+
+    <h3>둘을 합치면 = 자가 개선 루프 (Adaptive / Self-improving RAG)</h3>
+<pre class="diagram">   사용자 대화 ──▶ RAG 답변 ──▶ 피드백/로그 수집
+        ▲                            │
+        │              ① 자주 묻는 질문 군집화
+        │              ② 검증된 Q&amp;A를 지식에 추가
+        │              ③ 부족한 문서 보충
+        │                            │
+        └──────  개선된 RAG로 순환  ◀──┘</pre>
+    <p>구현은 특별할 게 없다. 기존 RAG에 <strong>① 로그 저장소</strong>(SQLite/PostgreSQL)와 <strong>② 반영 파이프라인</strong>(예: 매일 밤 로그 분석 → 승인 Q&amp;A 추가 · FAQ 갱신)을 붙이는 정도.</p>
+    <p><strong>전문 도구</strong>: Langfuse · LangSmith · RAGAS(평가) — RAG 품질 모니터링·로그 분석에 특화. 이런 도구가 존재한다는 것 자체가 이 패턴이 표준임을 보여준다.</p>
+  </section>
+  <hr>
+
+  <!-- 6. MCP로 RAG -->
+  <section id="mcp-rag">
+    <h2><span class="num">06</span> MCP로 RAG 구현 · 임베딩의 핵심</h2>
+    <p class="lead">Claude Code 같은 클라이언트에 MCP로 RAG를 붙일 때 실제 구조는 어떻게 되며, 무엇이 성능을 좌우하는가.</p>
+
+    <h3>역할 분리 — 임베딩 모델 ≠ 생성 LLM</h3>
+    <table>
+      <tr><th>종류</th><th>하는 일</th><th>예시</th></tr>
+      <tr><td><strong>임베딩 모델</strong> (인코더)</td><td>텍스트 → 벡터로 <em>변환만</em></td><td><code>nomic-embed-text</code>, <code>bge-m3</code></td></tr>
+      <tr><td><strong>생성 LLM</strong></td><td>텍스트를 <em>생성/추론</em></td><td>Llama3, Qwen, <strong>Claude</strong></td></tr>
+    </table>
+    <p>임베딩은 생성 LLM이 하는 게 아니라 <strong>임베딩 전용 모델</strong>이 한다. 그리고 임베딩 모델은 "분석"하는 게 아니라 의미를 숫자 배열로 <strong>인코딩</strong>할 뿐이다.</p>
+
+    <div class="callout warn">
+      <span class="ci">⚠</span>
+      <p><strong>흔한 오해</strong> — "LLM이 유사도를 비교해 찾아낸다"? 아니다. 가장 가까운 벡터를 찾는 일은 <strong>벡터 DB의 순수 수학 연산</strong>(코사인 거리 계산)이며, 지능이 개입하지 않는 <em>결정론적</em> 작업이다. 같은 입력이면 항상 같은 결과.</p>
+    </div>
+
+    <h3>Claude Code + MCP 실제 구조</h3>
+    <p>생성·추론 두뇌가 이미 <strong>Claude</strong>이므로, MCP 서버 안에 <strong>생성 LLM을 올릴 필요가 없는 경우가 많다.</strong> 서버는 "임베딩 모델 + 벡터 DB"면 충분하다.</p>
+<pre class="diagram">[ Claude Code ]  ← 생성·추론 담당 (LLM 역할 전부)
+      │  MCP로 "search(질문)" 호출
+      ▼
+[ MCP 서버 ]
+      ├─ 임베딩 모델 : 질문을 벡터로 변환   (작은 인코더)
+      ├─ 벡터 DB     : 내 자료 벡터와 거리 비교 → 가까운 청크 검색 (수학)
+      └─ 청크 텍스트 반환
+      │
+      ▼
+[ Claude ] 가 받은 청크를 근거로 최종 답변 생성</pre>
+    <div class="callout tip">
+      <span class="ci">✔</span>
+      <p>이 구조의 장점: 무거운 생성 LLM을 로컬에 안 올리고, <strong>가볍고 빠른 임베딩 모델만 로컬</strong>에 둔 채 Claude의 강력한 추론을 그대로 쓸 수 있다. (질문 임베딩도 클라이언트가 아니라 <em>서버 안</em>에서 일어난다.)</p>
+    </div>
+
+    <h3>그래서 가치의 핵심 = 임베딩 모델의 성능</h3>
+    <p>RAG는 <strong>"검색 → 생성"</strong>이 직렬로 연결된 파이프라인이라, 최종 품질은 두 단계 중 약한 쪽에 묶인다.</p>
+<pre class="diagram">[임베딩/검색]  →  [생성(Claude)]
+   품질 C            품질 A
+        └─── 최종 답변 품질 ≈ min(C, A) ───┘</pre>
+    <p>Claude가 아무리 똑똑해도 검색이 엉뚱한 청크를 가져오면 잘못된 근거로 답할 수밖에 없다(<em>garbage in, garbage out</em>). 그래서 <strong>임베딩 모델이 사실상 RAG 성능의 상한선</strong>을 정한다.</p>
+
+    <h3>임베딩 모델 선택 기준</h3>
+    <table>
+      <tr><th>기준</th><th>설명</th></tr>
+      <tr><td><strong>언어 지원</strong></td><td>한국어 문서라면 다국어에 강한 모델 필수 (<code>bge-m3</code>, <code>multilingual-e5</code>)</td></tr>
+      <tr><td><strong>MTEB 점수</strong></td><td>임베딩 검색 성능 벤치마크. Retrieval 부문 점수가 핵심 지표</td></tr>
+      <tr><td><strong>차원 수 / 속도</strong></td><td>차원↑ 정확도↑ 그러나 저장·검색 비용↑. 로컬이면 속도·메모리도 고려</td></tr>
+      <tr><td><strong>컨텍스트 길이</strong></td><td>한 번에 임베딩할 수 있는 청크 최대 길이</td></tr>
+      <tr><td><strong>도메인 적합성</strong></td><td>법률·의료·코드 등은 해당 분야 특화 모델이 유리</td></tr>
+    </table>
+    <p>
+      <span class="pill">한국어 기본값</span> bge-m3 &nbsp;
+      <span class="pill">다국어</span> multilingual-e5-large &nbsp;
+      <span class="pill">가볍고 빠름</span> nomic-embed-text
+    </p>
+
+    <div class="callout note">
+      <span class="ci">ℹ</span>
+      <p><strong>재인덱싱 주의</strong> — 임베딩 모델을 바꾸면 기존 벡터를 <em>전부 다시 임베딩</em>해야 한다(다른 모델의 벡터는 호환 안 됨). 처음부터 한국어에 강한 모델로 시작하면 나중에 갈아엎는 수고를 줄인다.</p>
+    </div>
+
+    <p><strong>한 줄 정리</strong> — 임베딩 모델은 "무엇을 찾아올지 결정하는 <em>눈</em>", Claude는 "찾아온 걸 해석하는 <em>두뇌</em>". 눈이 흐리면 두뇌가 좋아도 소용없으니, RAG의 핵심은 임베딩 모델의 품질·데이터·검색 설계다.</p>
+  </section>
+  <hr>
+
+  <!-- 7. 인덱싱형 vs 페더레이션형 -->
+  <section id="federation">
+    <h2><span class="num">07</span> 인덱싱형 vs 페더레이션형 (M365 사례)</h2>
+    <p class="lead">RAG의 "검색"은 꼭 미리 인덱싱해둘 필요가 없다. 질문할 때마다 원본을 실시간으로 찾아오는 <strong>페더레이션</strong> 방식도 있고, Microsoft 365가 둘을 모두 쓰는 좋은 사례다.</p>
+
+    <h3>두 가지 검색 패턴</h3>
+<pre class="diagram">[A] 인덱싱형 (미리 임베딩 / M365 Semantic Index)
+    문서 → 미리 임베딩 → 벡터·의미 인덱스 저장 → 질문 시 검색
+    + 빠름, 대규모     − 동기화 필요, 최신성 지연
+
+[B] 페더레이션형 (실시간 / M365 federated 커넥터)
+    질문 발생 → 원본 시스템에 실시간 질의 → 그때그때 받아옴
+    + 항상 최신, 데이터를 원본에 그대로 둠(거버넌스 유지)
+    − 매 질의마다 외부 호출, 원본 검색 성능에 의존</pre>
+
+    <h3>Synced vs Federated 커넥터</h3>
+    <table>
+      <tr><th></th><th>Synced (동기화형)</th><th>Federated (페더레이션형)</th></tr>
+      <tr><td><strong>데이터 위치</strong></td><td>중앙(MS Graph)에 복사·저장</td><td>원본 시스템에 그대로 둠</td></tr>
+      <tr><td><strong>인덱싱</strong></td><td>미리 인덱싱</td><td>안 함</td></tr>
+      <tr><td><strong>검색 시점</strong></td><td>저장된 인덱스에서</td><td>질문할 때 실시간 질의</td></tr>
+      <tr><td><strong>최신성</strong></td><td>동기화 주기만큼 지연</td><td>항상 최신</td></tr>
+    </table>
+    <div class="callout note">
+      <span class="ci">ℹ</span>
+      <p><strong>도서관 비유</strong> — Synced는 모든 책을 미리 복사해 자기 서가에 꽂아두고 검색. Federated는 책을 안 가져오고 목록만 알다가, 물어보면 그제서야 원본 소장처에 전화해 받아온다(항상 최신, 매번 요청).</p>
+    </div>
+
+    <h3>Microsoft 365는 어떻게 동작하나 — 2개 층으로 보기</h3>
+<pre class="diagram">[ 층 A ] Claude Code ──실시간 MCP 호출──▶ M365 (MCP 서버)
+[ 층 B ]                                M365 내부에서 실제로 어떻게 찾나?</pre>
+    <ul class="clean">
+      <li><strong>층 A (Claude Code ↔ M365)</strong> — Claude Code는 MCP <em>클라이언트</em>일 뿐, M365를 자기 쪽에 인덱싱하지 않는다. <strong>항상 실시간 호출</strong>이며, 인덱스를 가진 쪽은 M365다.</li>
+      <li><strong>층 B (M365 내부)</strong> — 여기서 인덱싱/페더레이션이 갈린다.</li>
+    </ul>
+    <table>
+      <tr><th>M365가 다루는 대상</th><th>방식</th></tr>
+      <tr><td>M365 자체 문서 (SharePoint·OneDrive·Teams·메일)</td><td><strong>미리 인덱싱됨</strong> (Semantic Index)</td></tr>
+      <tr><td>외부 데이터 — federated 커넥터</td><td>실시간 페더레이션 (인덱싱 X)</td></tr>
+      <tr><td>외부 데이터 — synced 커넥터</td><td>Graph에 동기화·인덱싱 후 활용</td></tr>
+    </table>
+
+    <div class="callout warn">
+      <span class="ci">⚠</span>
+      <p><strong>"인덱스를 쓰느냐"는 어떤 API를 부르냐에 달림.</strong> MCP 서버가 <em>Copilot Retrieval API / Microsoft Search API</em>를 부르면 Semantic Index 기반 의미 검색이 되지만, <em>원시(raw) Graph API</em>(파일 목록·메일 가져오기)만 부르면 인덱스 미사용 — "검색"이 아니라 단순 "fetch"다. 같은 "M365 MCP"라도 공식 서버냐 커뮤니티 래퍼냐에 따라 다르다.</p>
+    </div>
+
+    <p><strong>한 줄 정리</strong> — MCP는 "검색 방식을 규정하지 않는 통로"라, 그 너머가 <em>미리 만든 인덱스</em>든 <em>실시간 페더레이션</em>이든 상관없다. M365는 자체 문서는 인덱싱형, 외부 federated 커넥터는 페더레이션형으로 동시에 운영한다.</p>
+  </section>
+  <hr>
+
+  <!-- 8. 오픈소스 레포 -->
+  <section id="repos">
+    <h2><span class="num">08</span> 바로 쓰는 오픈소스 RAG MCP 서버</h2>
+    <p class="lead">검색 엔진(임베딩+벡터DB)은 표준화돼 있고 "등록하는 문서"만 갈아끼우면 되므로, 이미 잘 만들어진 RAG MCP 서버가 GitHub에 많다. 직접 짜기보다 가져다 쓰고 임베딩·청킹·문서에 집중하는 게 실용적.</p>
+
+    <table>
+      <tr><th>프로젝트</th><th>특징</th><th>적합한 용도</th></tr>
+      <tr><td><strong>mcp-local-rag</strong></td><td>로컬 우선·제로 설정, 의미+키워드 검색, MCP·CLI 지원, 완전 프라이빗</td><td>코드·기술문서 로컬 검색 (가벼운 출발점)</td></tr>
+      <tr><td><strong>MCP-Markdown-RAG</strong></td><td>마크다운 의미 검색, 벡터DB로 Milvus</td><td>마크다운 노트/위키</td></tr>
+      <tr><td><strong>mcp-crawl4ai-rag</strong></td><td>웹 크롤링 → 벡터DB(Supabase) 저장 → RAG</td><td>웹 문서 수집형</td></tr>
+      <tr><td><strong>Project RAG</strong> (Rust)</td><td>FastEmbed + LanceDB, 하이브리드(벡터+BM25), git 히스토리 검색</td><td>대규모 코드베이스 이해</td></tr>
+      <tr><td><strong>LEANN</strong></td><td>파일·메일·브라우저·채팅까지 로컬 의미 검색, 저장공간 97% 절감</td><td>개인 PC 전체를 RAG 대상으로</td></tr>
+      <tr><td><strong>OpenRAG MCP</strong></td><td>코딩 에이전트를 내 RAG 스택에 연결</td><td>기존 RAG 스택에 MCP 얹기</td></tr>
+    </table>
+
+    <h3>벡터DB 벤더 공식 MCP 서버</h3>
+    <p>이미 벡터DB를 쓰고 있다면 벤더 공식 MCP 서버가 가장 쉽다.</p>
+    <p>
+      <span class="pill">Qdrant</span> mcp-server-qdrant &nbsp;
+      <span class="pill">Chroma</span> 공식 MCP 서버 &nbsp;
+      <span class="pill">Milvus / Weaviate</span> 유사 제공
+    </p>
+
+    <div class="callout warn">
+      <span class="ci">⚠</span>
+      <p>한국어 문서가 많다면, 기본 임베딩 모델이 영어 위주인 프로젝트는 <code>bge-m3</code> 같은 다국어 모델로 <strong>교체 가능한지</strong> 먼저 확인할 것. 이게 한국어 검색 품질을 좌우한다.</p>
+    </div>
+
+    <h3>참고 링크</h3>
+    <ul class="clean">
+      <li><a href="https://github.com/shinpr/mcp-local-rag" target="_blank">github.com/shinpr/mcp-local-rag</a></li>
+      <li><a href="https://github.com/Zackriya-Solutions/MCP-Markdown-RAG" target="_blank">github.com/Zackriya-Solutions/MCP-Markdown-RAG</a></li>
+      <li><a href="https://github.com/coleam00/mcp-crawl4ai-rag" target="_blank">github.com/coleam00/mcp-crawl4ai-rag</a></li>
+      <li><a href="https://github.com/Brainwires/project-rag" target="_blank">github.com/Brainwires/project-rag</a></li>
+      <li><a href="https://github.com/yichuan-w/LEANN" target="_blank">github.com/yichuan-w/LEANN</a></li>
+      <li><a href="https://learn.microsoft.com/en-us/microsoftsearch/semantic-index-for-copilot" target="_blank">M365 Semantic Index — Microsoft Learn</a></li>
+      <li><a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/overview" target="_blank">M365 Copilot connectors — Microsoft Learn</a></li>
+    </ul>
+  </section>
+  <hr>
+
+  <!-- 9. DB 데이터에 RAG -->
+  <section id="db">
+    <h2><span class="num">09</span> DB 데이터에 RAG 적용하기</h2>
+    <p class="lead">"DB 전체를 임베딩 인덱싱"은 대개 정답이 아니다. 먼저 "이 데이터에 임베딩이 맞는 방식인가"부터 따져야 한다.</p>
+
+    <h3>정형 vs 비정형 — 검색 방식이 갈린다</h3>
+    <table>
+      <tr><th>데이터 성격</th><th>예시</th><th>적합한 방식</th></tr>
+      <tr><td><strong>정형(structured)</strong></td><td>매출액·날짜·카테고리·ID·수량</td><td><strong>SQL / Text-to-SQL</strong> (임베딩 불필요)</td></tr>
+      <tr><td><strong>비정형 텍스트</strong></td><td>상품 설명·고객 문의·리뷰·메모</td><td><strong>임베딩 RAG</strong> (의미 검색)</td></tr>
+    </table>
+    <div class="callout note">
+      <span class="ci">ℹ</span>
+      <p>임베딩은 <em>자연어 텍스트</em>에 강하고, 숫자·날짜·코드 같은 정형 값엔 부적합하다. "지난달 매출 top 10"은 임베딩이 아니라 <strong>SQL 한 줄</strong>이 정확·빠르고, "환불 요청이 잦은 불만 유형"은 문의 본문의 <strong>의미 검색</strong>이 필요하다.</p>
+    </div>
+
+    <h3>전체 말고 — 선택적 / 혼합</h3>
+    <p><strong>① 텍스트 컬럼만 선택적 임베딩</strong> — 테이블 전체가 아니라 자연어 컬럼만 임베딩하고, 정형 컬럼은 메타데이터(필터)로.</p>
+<pre class="diagram">[ 주문 테이블 ]
+  order_id, date, amount, category  ← 정형 → 필터 / WHERE 조건
+  customer_review (텍스트)          ← 비정형 → 임베딩</pre>
+    <p><strong>② 하이브리드: SQL 필터 + 의미 검색</strong></p>
+<pre class="diagram">"작년 4분기(=정형 필터) 주문 중, '배송 지연' 불만(=의미 검색)"
+   → WHERE date BETWEEN ... (SQL)  +  리뷰 텍스트 벡터 검색</pre>
+    <p>정형 조건으로 후보를 좁힌 뒤 그 안에서 의미 검색을 돌리면 정확도·속도가 함께 올라간다.</p>
+
+    <h3>인덱싱한다면 — "한 번에 전부" 말고 증분</h3>
+    <ul class="clean">
+      <li>신규/변경 행만 <strong>증분 인덱싱</strong> (타임스탬프·CDC·트리거 활용)</li>
+      <li>행(row) 하나 = 문서(청크) 하나로 보고, 관련 필드를 합쳐 텍스트화</li>
+      <li>DB가 자주 바뀌면 전체 재임베딩은 비용·시간이 큼</li>
+    </ul>
+
+    <h3>또는 — 인덱싱하지 않는 선택지 (페더레이션)</h3>
+    <p>M365처럼 미리 인덱싱하지 않고 질문 시점에 실시간 질의하는 방법. 정형 데이터엔 오히려 이쪽이 적합한 경우가 많다.</p>
+<pre class="diagram">[ Text-to-SQL MCP 서버 ]
+  질문 → LLM이 SQL 생성 → DB 실시간 실행 → 결과 반환
+  + 항상 최신, 정확한 집계/계산
+  − 복잡한 자연어 질의는 SQL 생성 정확도에 의존</pre>
+
+    <h3>결정 가이드</h3>
+    <table>
+      <tr><th>상황</th><th>추천</th></tr>
+      <tr><td>정형 데이터 (집계·필터·정확 조회)</td><td><strong>Text-to-SQL</strong> (인덱싱 X)</td></tr>
+      <tr><td>비정형 텍스트 (의미·유사 검색)</td><td>해당 <strong>텍스트 컬럼만 임베딩</strong></td></tr>
+      <tr><td>둘이 섞임 (대부분의 실무)</td><td><strong>하이브리드</strong> (SQL 필터 + 의미 검색)</td></tr>
+      <tr><td>데이터가 자주 바뀜</td><td><strong>증분 인덱싱</strong> 또는 <strong>실시간 페더레이션</strong></td></tr>
+    </table>
+
+    <p><strong>한 줄 정리</strong> — "DB 전체 임베딩"은 대개 비효율. 정형은 SQL/Text-to-SQL로, 비정형 텍스트 컬럼만 선택적으로 임베딩하고, 변화가 잦으면 증분 인덱싱이나 실시간 페더레이션을 쓴다. <em>전부 인덱싱</em>이 아니라 <em>무엇을 어떤 방식으로 검색할지 나누는</em> 설계가 핵심.</p>
+  </section>
+  <hr>
+
+  <!-- 10. 용어 -->
+  <section id="glossary">
+    <h2><span class="num">10</span> 용어 미니 사전</h2>
+    <table>
+      <tr><th>용어</th><th>뜻</th></tr>
+      <tr><td><strong>임베딩 (Embedding)</strong></td><td>텍스트의 의미를 숫자 벡터로 변환한 것. 의미가 비슷하면 벡터도 가깝다.</td></tr>
+      <tr><td><strong>청킹 (Chunking)</strong></td><td>긴 문서를 검색·임베딩하기 좋은 작은 조각으로 나누는 것.</td></tr>
+      <tr><td><strong>벡터 DB</strong></td><td>벡터를 저장하고 "가장 가까운 것"을 빠르게 찾아주는 DB (Chroma·FAISS·Qdrant 등).</td></tr>
+      <tr><td><strong>코사인 유사도</strong></td><td>두 벡터가 이루는 각도로 의미적 유사성을 재는 대표적 척도.</td></tr>
+      <tr><td><strong>Retriever</strong></td><td>질문 벡터로 벡터 DB에서 관련 청크를 골라오는 검색 컴포넌트.</td></tr>
+      <tr><td><strong>리랭킹 (Reranking)</strong></td><td>1차 검색 결과를 다시 정렬해 정확도를 높이는 후처리.</td></tr>
+      <tr><td><strong>하이브리드 검색</strong></td><td>벡터(의미) 검색 + 키워드 검색을 결합한 방식.</td></tr>
+      <tr><td><strong>에이전틱 RAG</strong></td><td>LLM이 검색 필요 여부를 스스로 판단하고 도구를 호출하는 RAG.</td></tr>
+      <tr><td><strong>파인튜닝</strong></td><td>모델 가중치 자체를 재학습. RAG는 이걸 안 해도 지식 주입이 된다는 게 장점.</td></tr>
+      <tr><td><strong>MCP</strong></td><td>Model Context Protocol — LLM 앱과 외부 도구/데이터를 잇는 개방형 표준.</td></tr>
+      <tr><td><strong>페더레이션 커넥터</strong></td><td>데이터를 미리 저장·인덱싱하지 않고, 질문 시점에 원본 시스템에서 실시간으로 검색해 가져오는 연결 방식.</td></tr>
+      <tr><td><strong>Synced 커넥터</strong></td><td>외부 데이터를 중앙(예: MS Graph)에 동기화·인덱싱해두고 검색에 활용하는 방식.</td></tr>
+      <tr><td><strong>Semantic Index</strong></td><td>M365 Copilot이 조직 데이터를 미리 어휘+의미 인덱스로 매핑해둔 RAG 백본.</td></tr>
+      <tr><td><strong>Text-to-SQL</strong></td><td>자연어 질문을 LLM이 SQL로 변환해 DB를 직접 질의하는 방식. 정형 데이터에 적합.</td></tr>
+      <tr><td><strong>증분 인덱싱</strong></td><td>전체를 매번 다시 임베딩하지 않고, 신규·변경된 데이터만 추가로 인덱싱하는 것.</td></tr>
+    </table>
+  </section>
+
+  <footer>
+    🧠 <strong>LocalBrain</strong> · 로컬 LLM · RAG · MCP 정리 노트<br>
+    한 번의 대화에서 정리됨 · 2026-05-30 · 오프라인 단독 실행 가능
+  </footer>
+</div>
+<a href="#top" class="top" title="맨 위로">↑</a>
+</body>
+</html>

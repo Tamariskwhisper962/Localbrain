@@ -1,0 +1,64 @@
+[project]
+name = "localbrain"
+dynamic = ["version"]
+description = "Local-first general-purpose RAG with an MCP server, CLI, and web console"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ email = "jwjy1313@gmail.com" }]
+keywords = ["rag", "mcp", "embeddings", "semantic-search", "llm", "local", "vector-search"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Text Processing :: Indexing",
+]
+
+# 기본 deps: fastembed(ONNX, 데몬 없음) → 추가 설치 없이 CPU 에서 바로 동작.
+# 기본 모델은 fastembed multilingual-e5-large (config 기본값). torch 불필요.
+dependencies = [
+  "fastembed>=0.3",
+  "chromadb>=0.5",
+  "mcp>=1.2",
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+  "pydantic>=2",
+  "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+# bge-m3 등 sentence-transformers provider + Cross-Encoder 리랭킹 (torch 동반).
+# GPU 는 별도: pip install torch --index-url https://download.pytorch.org/whl/cu126
+st = ["sentence-transformers>=3"]
+watch = ["watchdog>=4"]          # 실시간 인덱싱 트리거(옵션)
+all = ["sentence-transformers>=3", "watchdog>=4"]
+
+[project.urls]
+Homepage = "https://github.com/sinwoo0225/Localbrain"
+Repository = "https://github.com/sinwoo0225/Localbrain"
+Changelog = "https://github.com/sinwoo0225/Localbrain/blob/main/CHANGELOG.md"
+
+[project.scripts]
+localbrain = "localbrain.adapters.cli:main"
+localbrain-mcp = "localbrain.adapters.mcp_server:main"
+localbrain-web = "localbrain.adapters.web.server:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "localbrain.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# 웹 정적 자산을 wheel 에 포함 (없으면 설치 후 웹 UI 404)
+[tool.setuptools.package-data]
+"localbrain.adapters.web" = ["static/*"]

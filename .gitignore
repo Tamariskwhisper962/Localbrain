@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Data / models (runtime)
+.localbrain/
+*.db
+.cache/
+
+# Scratch
+_*.py
+
+# OS / editor
+.DS_Store
+.vs/
+.idea/
+.vscode/

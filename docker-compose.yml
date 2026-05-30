@@ -1,0 +1,20 @@
+# localbrain 웹 콘솔을 GPU 컨테이너로 실행 (옵션).
+# 사용: docker compose up --build  →  http://localhost:8765
+services:
+  localbrain-web:
+    build: .
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./_data:/data            # ~/.localbrain + HF 모델 캐시 영속화
+      - ${DOCS_DIR:-./docs}:/docs:ro   # 인덱싱할 호스트 문서 폴더(읽기전용 마운트)
+    environment:
+      LOCALBRAIN_HOST: "0.0.0.0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # 컨테이너 안에서 소스 경로는 /docs (호스트 경로 아님). UI/CLI 에서 /docs 를 소스로 추가.
