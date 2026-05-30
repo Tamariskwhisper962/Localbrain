@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write   # Trusted Publishing
+      id-token: write   # Trusted Publishing (OIDC)
+      contents: read    # checkout 용 — job-level permissions 는 기본값을 '대체'하므로 명시 필요
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
