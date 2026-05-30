@@ -10,4 +10,4 @@ docs/
 screenshots/
 *.db
 .localbrain/
-_*.py
+/_*.py

@@ -13,8 +13,8 @@ venv/
 *.db
 .cache/
 
-# Scratch
-_*.py
+# Scratch (root-level throwaway scripts only — must NOT match nested __init__.py)
+/_*.py
 
 # OS / editor
 .DS_Store
