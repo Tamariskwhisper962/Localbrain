@@ -1,5 +1,5 @@
 [project]
-name = "localbrain"
+name = "localbrain-rag"
 version = "0.1.0"
 description = "Local-first general-purpose RAG with an MCP server, CLI, and web console"
 readme = "README.md"

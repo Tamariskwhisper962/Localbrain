@@ -14,9 +14,11 @@ only needs a small **embedding** model — no local LLM, no Ollama daemon requir
 
 ## Install
 
+> Installed as **`localbrain-rag`** on PyPI; the command and import stay **`localbrain`**.
+
 ### Default (CPU, no extra setup)
 ```bash
-pip install localbrain
+pip install localbrain-rag
 ```
 Uses **fastembed** (ONNX, multilingual e5) — works on CPU with no PyTorch. Good enough to start.
 
@@ -27,11 +29,11 @@ Uses **fastembed** (ONNX, multilingual e5) — works on CPU with no PyTorch. Goo
    ```
 2. Install localbrain with sentence-transformers:
    ```bash
-   pip install "localbrain[st]"
+   pip install "localbrain-rag[st]"
    ```
 3. Point the config at bge-m3 (see [Configuration](#configuration)). Models auto-download on first use.
 
-> No NVIDIA GPU? Skip step 1 — `pip install "localbrain[st]"` installs a CPU PyTorch and still works (slower).
+> No NVIDIA GPU? Skip step 1 — `pip install "localbrain-rag[st]"` installs a CPU PyTorch and still works (slower).
 
 ## Quick start
 
