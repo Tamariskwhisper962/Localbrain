@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from .. import __version__
 from ..context import AppContext
@@ -12,6 +13,13 @@ from ..services.search_service import SearchService
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows 콘솔(cp949 등)에서도 한국어/특수문자 출력이 깨지지 않게 UTF-8 로 고정
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
     parser = argparse.ArgumentParser(prog="localbrain", description="로컬 RAG MCP 도구")
     parser.add_argument("--version", action="version", version=f"localbrain {__version__}")
     sub = parser.add_subparsers(dest="cmd", required=True)
