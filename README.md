@@ -1,5 +1,10 @@
 # localbrain
 
+[![PyPI](https://img.shields.io/pypi/v/localbrain-rag.svg)](https://pypi.org/project/localbrain-rag/)
+[![Python](https://img.shields.io/pypi/pyversions/localbrain-rag.svg)](https://pypi.org/project/localbrain-rag/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/sinwoo0225/Localbrain/actions/workflows/ci.yml/badge.svg)](https://github.com/sinwoo0225/Localbrain/actions/workflows/ci.yml)
+
 **Local-first general-purpose RAG** — point it at folders/files, index them, and search by meaning
 through an **MCP server** (for Claude Code etc.), a **CLI**, and a **web console**.
 Everything runs on your machine; generation is done by your MCP client (e.g. Claude), so localbrain
