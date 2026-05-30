@@ -28,3 +28,5 @@ jobs:
           python -m twine check dist/*
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true   # 이미 올라간 버전이면 실패 대신 건너뜀(재실행 안전)

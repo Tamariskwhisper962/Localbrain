@@ -34,6 +34,10 @@
   .score{color:var(--ok);font-family:var(--mono)}
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading{color:var(--dim);display:flex;align-items:center;gap:8px;padding:12px 0}
 </style>
 </head>
 <body>
@@ -192,9 +196,14 @@ function runIndex(){
 
 // --- Search ---
 async function doSearch(){
-  const hits = await api('/api/search', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({query:$('#q').value, k:parseInt($('#k').value)||5})});
-  const el = $('#results'); el.innerHTML = hits.length ? '' : '<div class="muted">결과 없음</div>';
+  const el = $('#results');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span> 검색 중…</div>';
+  let hits;
+  try {
+    hits = await api('/api/search', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query:$('#q').value, k:parseInt($('#k').value)||5})});
+  } catch(e){ el.innerHTML = '<div class="muted">검색 실패: ' + e + '</div>'; return; }
+  el.innerHTML = hits.length ? '' : '<div class="muted">결과 없음</div>';
   hits.forEach(h => {
     const c = document.createElement('div'); c.className = 'card';
     c.innerHTML = `<div><span class="score">${h.score.toFixed(3)}</span> · <span class="muted">${h.source_path}</span></div>
@@ -216,7 +225,11 @@ async function switchModel(){
 
 // --- Insights ---
 async function loadInsights(){
-  const r = await api('/api/insights');
+  $('#insmsg').innerHTML = '<span class="spinner"></span> 분석 중…';
+  $('#clusters').innerHTML = ''; $('#gaps').innerHTML = '';
+  let r;
+  try { r = await api('/api/insights'); }
+  catch(e){ $('#insmsg').textContent = '분석 실패: ' + e; return; }
   $('#insmsg').textContent = r.note ? r.note : `총 질의 ${r.total_queries}건 · 군집 ${r.clusters.length}개`;
   const cl = $('#clusters'); cl.innerHTML = (r.clusters||[]).length ? '' : '<div class="muted">군집 없음</div>';
   (r.clusters||[]).forEach(c => {
