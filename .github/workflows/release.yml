@@ -26,6 +26,10 @@ jobs:
           python -m pip install --upgrade build twine
           python -m build
           python -m twine check dist/*
+      - name: Verify wheel installs & imports (catches missing __init__.py)
+        run: |
+          python -m pip install --no-deps dist/*.whl
+          python -c "import localbrain, localbrain.adapters.cli; print('import OK', localbrain.__version__)"
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
