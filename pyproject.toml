@@ -1,6 +1,6 @@
 [project]
 name = "localbrain"
-dynamic = ["version"]
+version = "0.1.0"
 description = "Local-first general-purpose RAG with an MCP server, CLI, and web console"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -52,9 +52,6 @@ localbrain-web = "localbrain.adapters.web.server:main"
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools.dynamic]
-version = { attr = "localbrain.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
